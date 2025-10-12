@@ -6,4 +6,4 @@ coverage.xml
 __pycache__
 test_*.log
 temp_test_*
-
+.DS_Store

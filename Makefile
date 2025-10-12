@@ -1,13 +1,9 @@
-# Makefile для проекта Fellowship Tracker
-
-# Переменные
 PYTHON = python3
 PIP = pip3
 FLASK_APP = app.py
 VENV_NAME = venv
 PORT = 5000
 
-# Цвета для вывода
 RED = \033[0;31m
 GREEN = \033[0;32m
 YELLOW = \033[1;33m
@@ -16,7 +12,6 @@ NC = \033[0m # No Color
 
 .PHONY: help install dev prod clean test lint format docker-build docker-run setup check
 
-# Помощь
 help:
 	@echo "$(BLUE)Fellowship Tracker - Makefile команды:$(NC)"
 	@echo ""
@@ -37,7 +32,6 @@ help:
 	@echo "  make docker-run   - Запуск в Docker контейнере"
 	@echo ""
 
-# Полная настройка проекта
 setup:
 	@echo "$(YELLOW)Настройка проекта Fellowship Tracker...$(NC)"
 	@if [ ! -d "$(VENV_NAME)" ]; then \
@@ -53,13 +47,11 @@ setup:
 	@echo "$(GREEN)✓ Проект успешно настроен!$(NC)"
 	@echo "$(YELLOW)Для запуска используйте: make dev$(NC)"
 
-# Установка зависимостей
 install:
 	@echo "$(BLUE)Установка зависимостей...$(NC)"
 	$(PIP) install -r requirements.txt
 	@echo "$(GREEN)✓ Зависимости установлены$(NC)"
 
-# Проверка состояния проекта
 check:
 	@echo "$(BLUE)Проверка состояния проекта...$(NC)"
 	@echo "Python версия: $$($(PYTHON) --version)"
@@ -80,7 +72,6 @@ check:
 		echo "$(RED)✗ Flask приложение не найдено$(NC)"; \
 	fi
 
-# Разработка
 dev:
 	@echo "$(GREEN)Запуск приложения в режиме разработки...$(NC)"
 	@echo "$(YELLOW)Приложение будет доступно по адресу: http://localhost:$(PORT)$(NC)"
@@ -90,7 +81,6 @@ dev:
 		FLASK_ENV=development FLASK_DEBUG=1 $(PYTHON) $(FLASK_APP); \
 	fi
 
-# Продакшен
 prod:
 	@echo "$(GREEN)Запуск приложения в продакшен режиме...$(NC)"
 	@if [ -f "$(VENV_NAME)/bin/activate" ]; then \
@@ -99,7 +89,6 @@ prod:
 		FLASK_ENV=production $(PYTHON) $(FLASK_APP); \
 	fi
 
-# Очистка
 clean:
 	@echo "$(YELLOW)Очистка временных файлов...$(NC)"
 	find . -type f -name "*.pyc" -delete
@@ -112,7 +101,6 @@ clean:
 	fi
 	@echo "$(GREEN)✓ Временные файлы очищены$(NC)"
 
-# Линтинг (требует установки flake8)
 lint:
 	@echo "$(BLUE)Проверка кода с помощью flake8...$(NC)"
 	@if command -v flake8 >/dev/null 2>&1; then \
@@ -122,7 +110,6 @@ lint:
 		echo "$(RED)flake8 не установлен. Установите: pip install flake8$(NC)"; \
 	fi
 
-# Форматирование (требует установки black)
 format:
 	@echo "$(BLUE)Форматирование кода с помощью black...$(NC)"
 	@if command -v black >/dev/null 2>&1; then \
@@ -132,26 +119,22 @@ format:
 		echo "$(RED)black не установлен. Установите: pip install black$(NC)"; \
 	fi
 
-# Docker сборка
 docker-build:
 	@echo "$(BLUE)Сборка Docker образа...$(NC)"
 	docker build -t fellowship-tracker .
 	@echo "$(GREEN)✓ Docker образ собран$(NC)"
 
-# Docker запуск
 docker-run:
 	@echo "$(GREEN)Запуск приложения в Docker контейнере...$(NC)"
 	@echo "$(YELLOW)Приложение будет доступно по адресу: http://localhost:$(PORT)$(NC)"
 	docker run -p $(PORT):$(PORT) --name fellowship-tracker-container fellowship-tracker
 
-# Остановка Docker контейнера
 docker-stop:
 	@echo "$(YELLOW)Остановка Docker контейнера...$(NC)"
 	docker stop fellowship-tracker-container || true
 	docker rm fellowship-tracker-container || true
 	@echo "$(GREEN)✓ Контейнер остановлен$(NC)"
 
-# Инициализация базы данных
 init-db:
 	@echo "$(BLUE)Инициализация базы данных...$(NC)"
 	@if [ -f "$(VENV_NAME)/bin/activate" ]; then \
@@ -161,7 +144,6 @@ init-db:
 	fi
 	@echo "$(GREEN)✓ База данных инициализирована$(NC)"
 
-# Создание миграций (если используется Flask-Migrate)
 migrate:
 	@echo "$(BLUE)Создание миграций...$(NC)"
 	@if command -v flask >/dev/null 2>&1; then \
@@ -173,7 +155,6 @@ migrate:
 		make init-db; \
 	fi
 
-# Создание sample данных
 seed:
 	@echo "$(BLUE)Загрузка тестовых данных...$(NC)"
 	@if [ -f "$(VENV_NAME)/bin/activate" ]; then \
@@ -183,7 +164,6 @@ seed:
 	fi
 	@echo "$(GREEN)✓ Тестовые данные загружены$(NC)"
 
-# Полная переустановка
 reset: clean
 	@echo "$(YELLOW)Полная переустановка проекта...$(NC)"
 	@if [ -d "$(VENV_NAME)" ]; then \
@@ -195,7 +175,6 @@ reset: clean
 	make seed
 	@echo "$(GREEN)✓ Проект переустановлен и готов к работе!$(NC)"
 
-# Запуск с автоматической перезагрузкой
 watch:
 	@echo "$(GREEN)Запуск с автоматической перезагрузкой...$(NC)"
 	@if command -v watchdog >/dev/null 2>&1; then \
@@ -205,7 +184,6 @@ watch:
 		make dev; \
 	fi
 
-# Проверка безопасности
 security:
 	@echo "$(BLUE)Проверка безопасности зависимостей...$(NC)"
 	@if command -v safety >/dev/null 2>&1; then \
@@ -215,7 +193,6 @@ security:
 		echo "$(RED)safety не установлен. Установите: pip install safety$(NC)"; \
 	fi
 
-# Бэкап базы данных
 backup:
 	@echo "$(BLUE)Создание бэкапа базы данных...$(NC)"
 	@if [ -f "fellowship_tracker.db" ]; then \
@@ -225,7 +202,6 @@ backup:
 		echo "$(YELLOW)База данных не найдена$(NC)"; \
 	fi
 
-# Показать логи
 logs:
 	@echo "$(BLUE)Последние логи приложения:$(NC)"
 	@if [ -f "app.log" ]; then \
@@ -234,7 +210,6 @@ logs:
 		echo "$(YELLOW)Файл логов не найден$(NC)"; \
 	fi
 
-# По умолчанию показываем help
 .DEFAULT_GOAL := help
 
 # Тестирование
@@ -303,7 +278,6 @@ test-watch:
 		pytest-watch; \
 	fi
 
-# Очистка включает тестовые файлы
 clean:
 	@echo "$(YELLOW)Очистка временных файлов...$(NC)"
 	find . -type f -name "*.pyc" -delete
@@ -319,7 +293,6 @@ clean:
 	fi
 	@echo "$(GREEN)✓ Временные файлы очищены$(NC)"
 
-# Инициализация базы данных с примерными данными
 init-sample-data:
 	@echo "$(BLUE)Инициализация базы данных с примерными данными...$(NC)"
 	@if [ -f "$(VENV_NAME)/bin/activate" ]; then \
@@ -328,7 +301,6 @@ init-sample-data:
 		$(PYTHON) -c "from app import app, db, init_sample_data; app.app_context().push(); db.create_all(); init_sample_data(); print('Примерные данные загружены!')"; \
 	fi
 
-# Обновляем команду setup
 setup:
 	@echo "$(YELLOW)Настройка проекта Fellowship Tracker...$(NC)"
 	@if [ ! -d "$(VENV_NAME)" ]; then \
@@ -343,10 +315,8 @@ setup:
 	@echo "$(YELLOW)Для загрузки примерных данных используйте: make init-sample-data$(NC)"
 	@echo "$(YELLOW)Для запуска используйте: make dev$(NC)"
 
-# Команда для первого запуска с данными
 dev-with-data: init-sample-data dev
 
-# Обновляем help
 help:
 	@echo "$(BLUE)Fellowship Tracker - Makefile команды:$(NC)"
 	@echo ""
