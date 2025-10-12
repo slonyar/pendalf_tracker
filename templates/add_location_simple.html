@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-map-marker-alt"></i> Добавить местоположение</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <form method="POST" id="locationForm" novalidate>
+                            <div class="mb-3">
+                                <label for="character_id" class="form-label">
+                                    <i class="fas fa-user"></i> Персонаж *
+                                </label>
+                                <select name="character_id" id="character_id" class="form-select">
+                                    <option value="">Выберите персонажа из Братства</option>
+                                    {% for character in characters %}
+                                    <option value="{{ character.id }}">
+                                        {{ character.name }}
+                                        {% if character.race %}
+                                            — {{ {'hobbit': 'Хоббит', 'human': 'Человек', 'elf': 'Эльф', 'dwarf': 'Гном', 'wizard': 'Маг'}.get(character.race, character.race.title()) }}
+                                        {% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">
+                                    Пожалуйста, выберите персонажа.
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="latitude" class="form-label">
+                                            <i class="fas fa-compass"></i> Широта *
+                                        </label>
+                                        <input type="text" name="latitude" id="latInput" class="form-control coordinate-input" 
+                                               value="-39.0" pattern="-?[0-9]+\.?[0-9]*">
+                                        <div class="form-text">От -90° до +90°</div>
+                                        <div class="invalid-feedback">
+                                            Введите широту от -90 до 90.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="longitude" class="form-label">
+                                            <i class="fas fa-compass"></i> Долгота *
+                                        </label>
+                                        <input type="text" name="longitude" id="lngInput" class="form-control coordinate-input" 
+                                               value="176.0" pattern="-?[0-9]+\.?[0-9]*">
+                                        <div class="form-text">От -180° до +180°</div>
+                                        <div class="invalid-feedback">
+                                            Введите долготу от -180 до 180.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Красивый выбор даты и времени -->
+                            <div class="mb-3">
+                                <label for="timestamp" class="form-label">
+                                    <i class="fas fa-clock"></i> Дата и время
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </span>
+                                    <input type="text" name="timestamp" id="timestamp" class="form-control" 
+                                           placeholder="Выберите дату и время">
+                                </div>
+                                <div class="form-text">Если не указано, будет использовано текущее время</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="location_name" class="form-label">
+                                    <i class="fas fa-map-marker-alt"></i> Название места
+                                </label>
+                                <input type="text" name="location_name" id="location_name" class="form-control" 
+                                       placeholder="Например: Хоббитон, Ривенделл, Мория">
+                                <div class="form-text">Укажите известное место Средиземья или оставьте пустым</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">
+                                    <i class="fas fa-sticky-note"></i> Заметки
+                                </label>
+                                <textarea name="notes" id="notes" class="form-control" rows="3" 
+                                          placeholder="Что происходило в этом месте? Важные события, встречи..."></textarea>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Назад
+                                </a>
+                                <div>
+                                    <button type="button" id="useCurrentTime" class="btn btn-outline-info me-2">
+                                        <i class="fas fa-clock"></i> Сейчас
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Сохранить местоположение
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-map"></i> Выберите на карте:
+                            </label>
+                            <div id="locationMap" style="height: 400px; border: 1px solid #ddd; border-radius: 0.375rem;"></div>
+                            <small class="text-muted">
+                                <i class="fas fa-mouse-pointer"></i> Кликните на карту для выбора координат
+                            </small>
+                        </div>
+                        
+                        <div class="card bg-light">
+                            <div class="card-body p-3">
+                                <h6 class="card-title">
+                                    <i class="fas fa-map-signs"></i> Известные места Средиземья:
+                                </h6>
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary location-preset" 
+                                            data-lat="-37.8136" data-lng="174.9442" data-name="Хоббитон">
+                                        <strong>Хоббитон</strong>
+                                        <small class="text-muted"> — Дом хоббитов в Шире</small>
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-sm btn-outline-primary location-preset" 
+                                            data-lat="-39.8136" data-lng="176.9442" data-name="Ривенделл">
+                                        <strong>Ривенделл</strong>
+                                        <small class="text-muted"> — Дом Эльронда</small>
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-sm btn-outline-primary location-preset" 
+                                            data-lat="-41.8136" data-lng="178.9442" data-name="Мория">
+                                        <strong>Мория</strong>
+                                        <small class="text-muted"> — Копи Кхазад-дума</small>
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-sm btn-outline-primary location-preset" 
+                                            data-lat="-42.5" data-lng="180.2" data-name="Лориэн">
+                                        <strong>Лориэн</strong>
+                                        <small class="text-muted"> — Лес Галадриэли</small>
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-sm btn-outline-primary location-preset" 
+                                            data-lat="-44.8136" data-lng="181.9442" data-name="Минас Тирит">
+                                        <strong>Минас Тирит</strong>
+                                        <small class="text-muted"> — Столица Гондора</small>
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-sm btn-outline-danger location-preset" 
+                                            data-lat="-46.8136" data-lng="183.9442" data-name="Мордор">
+                                        <strong>Мордор</strong>
+                                        <small class="text-muted"> — Земли Тьмы</small>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация красивого выбора даты и времени
+    const datetimePicker = flatpickr("#timestamp", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        locale: "ru",
+        defaultDate: new Date(),
+        allowInput: true,
+        clickOpens: true,
+        placeholder: "Выберите дату и время"
+    });
+    
+    // Кнопка "Сейчас"
+    document.getElementById('useCurrentTime').addEventListener('click', function() {
+        datetimePicker.setDate(new Date());
+    });
+    
+    // Инициализация карты
+    const locationMap = L.map('locationMap').setView([-39.0, 176.0], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(locationMap);
+    
+    let currentMarker = null;
+    
+    // Функция форматирования координат (ограничение знаков после запятой)
+    function formatCoordinate(value, precision = 4) {
+        const num = parseFloat(value);
+        return isNaN(num) ? value : num.toFixed(precision);
+    }
+    
+    // Функция обновления маркера
+    function updateMarker(lat, lng, name = null, isPreset = false) {
+        // Удаляем старый маркер
+        if (currentMarker) {
+            locationMap.removeLayer(currentMarker);
+        }
+        
+        // Создаем новый маркер
+        const markerColor = isPreset ? '#28a745' : '#007bff';
+        currentMarker = L.circleMarker([lat, lng], {
+            color: markerColor,
+            fillColor: markerColor,
+            fillOpacity: 0.7,
+            radius: 8,
+            weight: 2
+        }).addTo(locationMap);
+        
+        const popupContent = name ? 
+            `<div class="text-center">
+                <h6 class="mb-1">${name}</h6>
+                <small class="text-muted">Координаты: ${formatCoordinate(lat)}, ${formatCoordinate(lng)}</small>
+            </div>` :
+            `<div class="text-center">
+                <h6 class="mb-1">Выбранная точка</h6>
+                <small class="text-muted">${formatCoordinate(lat)}, ${formatCoordinate(lng)}</small>
+            </div>`;
+            
+        currentMarker.bindPopup(popupContent, {
+            className: 'custom-popup'
+        });
+        
+        if (isPreset) {
+            currentMarker.openPopup();
+        }
+    }
+    
+    // Обработчик клика по карте
+    locationMap.on('click', function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        
+        document.getElementById('latInput').value = formatCoordinate(lat);
+        document.getElementById('lngInput').value = formatCoordinate(lng);
+        
+        updateMarker(lat, lng);
+        clearValidationErrors();
+        
+        // Очищаем название места при ручном выборе
+        document.getElementById('location_name').value = '';
+    });
+    
+    // Обработчики для предустановленных мест
+    document.querySelectorAll('.location-preset').forEach(button => {
+        button.addEventListener('click', function() {
+            const lat = parseFloat(this.dataset.lat);
+            const lng = parseFloat(this.dataset.lng);
+            const name = this.dataset.name;
+            
+            document.getElementById('latInput').value = formatCoordinate(lat);
+            document.getElementById('lngInput').value = formatCoordinate(lng);
+            document.getElementById('location_name').value = name;
+            
+            locationMap.setView([lat, lng], 8);
+            updateMarker(lat, lng, name, true);
+            clearValidationErrors();
+            
+            // Небольшая анимация кнопки
+            this.classList.add('btn-success');
+            setTimeout(() => {
+                this.classList.remove('btn-success');
+            }, 500);
+        });
+    });
+    
+    // Функция очистки ошибок валидации
+    function clearValidationErrors() {
+        document.querySelectorAll('.is-invalid').forEach(element => {
+            element.classList.remove('is-invalid');
+        });
+    }
+    
+    // Обработчики изменения координат в полях
+    function updateMarkerFromInputs() {
+        const lat = parseFloat(document.getElementById('latInput').value);
+        const lng = parseFloat(document.getElementById('lngInput').value);
+        
+        if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+            updateMarker(lat, lng);
+            clearValidationErrors();
+            
+            // Центрируем карту только если координаты сильно изменились
+            const currentCenter = locationMap.getCenter();
+            const distance = Math.abs(currentCenter.lat - lat) + Math.abs(currentCenter.lng - lng);
+            if (distance > 5) {
+                locationMap.setView([lat, lng], locationMap.getZoom());
+            }
+        }
+    }
+    
+    // Валидация координат в реальном времени
+    function validateCoordinate(input, min, max) {
+        const value = parseFloat(input.value);
+        const isValid = !isNaN(value) && value >= min && value <= max;
+        
+        if (input.value.trim() === '') {
+            // Пустое поле - убираем ошибку
+            input.classList.remove('is-invalid');
+            return false;
+        } else if (!isValid) {
+            // Неверное значение - показываем ошибку
+            input.classList.add('is-invalid');
+            return false;
+        } else {
+            // Правильное значение - убираем ошибку
+            input.classList.remove('is-invalid');
+            return true;
+        }
+    }
+    
+    // Обработчики для полей координат
+    const latInput = document.getElementById('latInput');
+    const lngInput = document.getElementById('lngInput');
+    
+    latInput.addEventListener('input', function() {
+        validateCoordinate(this, -90, 90);
+    });
+    
+    latInput.addEventListener('blur', function() {
+        if (this.value.trim() !== '') {
+            updateMarkerFromInputs();
+        }
+    });
+    
+    lngInput.addEventListener('input', function() {
+        validateCoordinate(this, -180, 180);
+    });
+    
+    lngInput.addEventListener('blur', function() {
+        if (this.value.trim() !== '') {
+            updateMarkerFromInputs();
+        }
+    });
+    
+    // Валидация формы при отправке
+    const form = document.getElementById('locationForm');
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Проверяем персонажа
+        const characterSelect = document.getElementById('character_id');
+        if (!characterSelect.value) {
+            characterSelect.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            characterSelect.classList.remove('is-invalid');
+        }
+        
+        // Проверяем координаты
+        const latValid = validateCoordinate(latInput, -90, 90) && latInput.value.trim() !== '';
+        const lngValid = validateCoordinate(lngInput, -180, 180) && lngInput.value.trim() !== '';
+        
+        if (!latValid || !lngValid) {
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            
+            // Прокручиваем к первому полю с ошибкой
+            const firstError = document.querySelector('.is-invalid');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstError.focus();
+            }
+            
+            // Показываем уведомление
+            showNotification('Пожалуйста, заполните все обязательные поля корректно!', 'error');
+        } else {
+            // Показываем индикатор загрузки
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    // Функция показа уведомлений
+    function showNotification(message, type = 'info') {
+        const alertClass = type === 'error' ? 'alert-danger' : type === 'success' ? 'alert-success' : 'alert-info';
+        
+        const alert = document.createElement('div');
+        alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alert);
+        
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+    
+    // Устанавливаем начальный маркер
+    updateMarkerFromInputs();
+});
+</script>
+{% endblock %}
+

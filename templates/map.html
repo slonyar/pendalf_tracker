@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Карта - Трекер Братства Кольца{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <h2>
+            <i class="fas fa-map"></i>
+            Карта местоположений Братства
+        </h2>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <label for="characterSelect" class="form-label">Персонаж:</label>
+        <select id="characterSelect" class="form-select">
+            <option value="">Все персонажи</option>
+            {% for character in characters %}
+            <option value="{{ character.id }}">{{ character.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="startDate" class="form-label">С даты:</label>
+        <input type="datetime-local" id="startDate" class="form-control">
+    </div>
+    <div class="col-md-3">
+        <label for="endDate" class="form-label">По дату:</label>
+        <input type="datetime-local" id="endDate" class="form-control">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">&nbsp;</label>
+        <div>
+            <button id="filterBtn" class="btn btn-primary">
+                <i class="fas fa-filter"></i> Применить фильтр
+            </button>
+            <button id="clearBtn" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Очистить
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="showTrajectories" checked>
+            <label class="form-check-label" for="showTrajectories">
+                Показать траектории
+            </label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="showMarkers" checked>
+            <label class="form-check-label" for="showMarkers">
+                Показать метки
+            </label>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div id="mainMap" style="height: 600px;"></div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i>
+                    Информация о местоположениях
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="locationInfo">
+                    <p class="text-muted">Выберите персонажа или примените фильтр для просмотра подробной информации.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация карты
+    const mainMap = L.map('mainMap').setView([-39.0, 176.0], 6);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(mainMap);
+    
+    let markers = [];
+    let trajectories = [];
+    let allLocations = [];
+    
+    // Цвета для разных персонажей
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE'];
+    const characterColors = {};
+    
+    function getCharacterColor(characterId) {
+        if (!characterColors[characterId]) {
+            characterColors[characterId] = colors[Object.keys(characterColors).length % colors.length];
+        }
+        return characterColors[characterId];
+    }
+    
+    function clearMap() {
+        markers.forEach(marker => mainMap.removeLayer(marker));
+        trajectories.forEach(trajectory => mainMap.removeLayer(trajectory));
+        markers = [];
+        trajectories = [];
+    }
+    
+    function loadLocations(params = {}) {
+        const url = new URL('/api/locations', window.location.origin);
+        Object.keys(params).forEach(key => {
+            if (params[key]) url.searchParams.append(key, params[key]);
+        });
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(locations => {
+                allLocations = locations;
+                displayLocations(locations);
+                updateLocationInfo(locations);
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки данных:', error);
+                alert('Ошибка загрузки данных!');
+            });
+    }
+    
+    function displayLocations(locations) {
+        clearMap();
+        
+        const showMarkers = document.getElementById('showMarkers').checked;
+        const showTrajectories = document.getElementById('showTrajectories').checked;
+        
+        // Группируем по персонажам
+        const locationsByCharacter = {};
+        locations.forEach(location => {
+            if (!locationsByCharacter[location.character_id]) {
+                locationsByCharacter[location.character_id] = [];
+            }
+            locationsByCharacter[location.character_id].push(location);
+        });
+        
+        // Отображаем для каждого персонажа
+        Object.keys(locationsByCharacter).forEach(characterId => {
+            const characterLocations = locationsByCharacter[characterId];
+            const color = getCharacterColor(characterId);
+            
+            if (showMarkers) {
+                characterLocations.forEach((location, index) => {
+                    const isLatest = index === characterLocations.length - 1;
+                    const marker = L.circleMarker([location.latitude, location.longitude], {
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: isLatest ? 0.8 : 0.5,
+                        radius: isLatest ? 8 : 5,
+                        weight: 2
+                    }).bindPopup(`
+                        <div class="popup-content">
+                            <h6><i class="fas fa-user"></i> ${location.character_name}</h6>
+                            <p><i class="fas fa-map-marker-alt"></i> ${location.location_name || 'Координаты: ' + location.latitude + ', ' + location.longitude}</p>
+                            <p><i class="fas fa-clock"></i> ${new Date(location.timestamp).toLocaleString('ru-RU')}</p>
+                            ${location.notes ? '<p><i class="fas fa-sticky-note"></i> ' + location.notes + '</p>' : ''}
+                            ${isLatest ? '<span class="badge bg-success">Текущее местоположение</span>' : ''}
+                        </div>
+                    `);
+                    
+                    markers.push(marker);
+                    marker.addTo(mainMap);
+                });
+            }
+            
+            if (showTrajectories && characterLocations.length > 1) {
+                const coordinates = characterLocations.map(loc => [loc.latitude, loc.longitude]);
+                const trajectory = L.polyline(coordinates, {
+                    color: color,
+                    weight: 3,
+                    opacity: 0.7,
+                    dashArray: '5, 5'
+                }).bindPopup(`Траектория движения: ${characterLocations[0].character_name}`);
+                
+                trajectories.push(trajectory);
+                trajectory.addTo(mainMap);
+            }
+        });
+        
+        // Подгоняем карту под все маркеры
+        if (markers.length > 0) {
+            const group = new L.featureGroup(markers);
+            mainMap.fitBounds(group.getBounds().pad(0.1));
+        }
+    }
+    
+    function updateLocationInfo(locations) {
+        const infoDiv = document.getElementById('locationInfo');
+        
+        if (locations.length === 0) {
+            infoDiv.innerHTML = '<p class="text-muted">Нет данных для отображения.</p>';
+            return;
+        }
+        
+        // Группируем по персонажам
+        const locationsByCharacter = {};
+        locations.forEach(location => {
+            if (!locationsByCharacter[location.character_name]) {
+                locationsByCharacter[location.character_name] = [];
+            }
+            locationsByCharacter[location.character_name].push(location);
+        });
+        
+        let html = '<div class="row">';
+        Object.keys(locationsByCharacter).forEach(characterName => {
+            const characterLocations = locationsByCharacter[characterName];
+            const latest = characterLocations[characterLocations.length - 1];
+            
+            html += `
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <span class="badge" style="background-color: ${getCharacterColor(latest.character_id)};">&nbsp;</span>
+                                ${characterName}
+                            </h6>
+                            <p class="card-text">
+                                <strong>Всего отметок:</strong> ${characterLocations.length}<br>
+                                <strong>Последнее местоположение:</strong> ${latest.location_name || 'Координаты: ' + latest.latitude + ', ' + latest.longitude}<br>
+                                <strong>Время:</strong> ${new Date(latest.timestamp).toLocaleString('ru-RU')}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        infoDiv.innerHTML = html;
+    }
+    
+    // Обработчики событий
+    document.getElementById('filterBtn').addEventListener('click', function() {
+        const params = {};
+        
+        const characterId = document.getElementById('characterSelect').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        
+        if (characterId) params.character_id = characterId;
+        if (startDate) params.start_date = startDate;
+        if (endDate) params.end_date = endDate;
+        
+        loadLocations(params);
+    });
+    
+    document.getElementById('clearBtn').addEventListener('click', function() {
+        document.getElementById('characterSelect').value = '';
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        loadLocations();
+    });
+    
+    document.getElementById('showTrajectories').addEventListener('change', function() {
+        displayLocations(allLocations);
+    });
+    
+    document.getElementById('showMarkers').addEventListener('change', function() {
+        displayLocations(allLocations);
+    });
+    
+    // Первоначальная загрузка
+    loadLocations();
+});
+</script>
+{% endblock %}
+

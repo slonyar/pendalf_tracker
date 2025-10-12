@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Добавить местоположение - Трекер Братства Кольца{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-map-marker-alt"></i>
+                    Добавить новое местоположение
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <form method="POST" id="locationForm">
+                            {{ form.hidden_tag() }}
+                            
+                            <div class="mb-3">
+                                {{ form.character_id.label(class="form-label") }}
+                                {{ form.character_id(class="form-select") }}
+                                {% for error in form.character_id.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.latitude.label(class="form-label") }}
+                                        {{ form.latitude(class="form-control", step="any", id="latInput") }}
+                                        {% for error in form.latitude.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.longitude.label(class="form-label") }}
+                                        {{ form.longitude(class="form-control", step="any", id="lngInput") }}
+                                        {% for error in form.longitude.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.timestamp.label(class="form-label") }}
+                                {{ form.timestamp(class="form-control") }}
+                                {% for error in form.timestamp.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.location_name.label(class="form-label") }}
+                                {{ form.location_name(class="form-control", placeholder="Например: Шир, Ривенделл, Мория...") }}
+                                {% for error in form.location_name.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.notes.label(class="form-label") }}
+                                {{ form.notes(class="form-control", rows="3", placeholder="Дополнительные заметки о местоположении...") }}
+                                {% for error in form.notes.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i>
+                                    Назад
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    Сохранить местоположение
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Выберите на карте:</label>
+                            <div id="locationMap" style="height: 400px; border: 1px solid #ddd; border-radius: 0.375rem;"></div>
+                            <small class="text-muted">Кликните на карту для выбора координат</small>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Известные места Средиземья:</h6>
+                            <div class="row">
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-sm btn-outline-info mb-1 location-preset" data-lat="-37.8136" data-lng="174.9442" data-name="Хоббитон">Хоббитон</button><br>
+                                    <button type="button" class="btn btn-sm btn-outline-info mb-1 location-preset" data-lat="-39.8136" data-lng="176.9442" data-name="Ривенделл">Ривенделл</button><br>
+                                    <button type="button" class="btn btn-sm btn-outline-info mb-1 location-preset" data-lat="-41.8136" data-lng="178.9442" data-name="Мория">Мория</button><br>
+                                    <button type="button" class="btn btn-sm btn-outline-info mb-1 location-preset" data-lat="-42.8136" data-lng="179.9442" data-name="Лориэн">Лориэн</button><br>
+                                </div>
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-sm btn-outline-info mb-1 location-preset" data-lat="-43.8136" data-lng="180.9442" data-name="Изенгард">Изенгард</button><br>
+                                    <button type="button" class="btn btn-sm btn-outline-info mb-1 location-preset" data-lat="-44.8136" data-lng="181.9442" data-name="Минас Тирит">Минас Тирит</button><br>
+                                    <button type="button" class="btn btn-sm btn-outline-info mb-1 location-preset" data-lat="-45.8136" data-lng="182.9442" data-name="Мордор">Мордор</button><br>
+                                    <button type="button" class="btn btn-sm btn-outline-info mb-1 location-preset" data-lat="-46.8136" data-lng="183.9442" data-name="Гора Судьбы">Гора Судьбы</button><br>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация карты
+    const locationMap = L.map('locationMap').setView([-39.0, 176.0], 6);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(locationMap);
+    
+    let currentMarker = null;
+    
+    // Обработчик клика по карте
+    locationMap.on('click', function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        
+        // Обновляем поля формы
+        document.getElementById('latInput').value = lat.toFixed(6);
+        document.getElementById('lngInput').value = lng.toFixed(6);
+        
+        // Добавляем/перемещаем маркер
+        if (currentMarker) {
+            currentMarker.setLatLng([lat, lng]);
+        } else {
+            currentMarker = L.marker([lat, lng]).addTo(locationMap);
+        }
+        
+        currentMarker.bindPopup(`
+            Выбранные координаты:<br>
+            Широта: ${lat.toFixed(6)}<br>
+            Долгота: ${lng.toFixed(6)}
+        `).openPopup();
+    });
+    
+    // Обработчики для заранее определенных мест
+    document.querySelectorAll('.location-preset').forEach(button => {
+        button.addEventListener('click', function() {
+            const lat = parseFloat(this.dataset.lat);
+            const lng = parseFloat(this.dataset.lng);
+            const name = this.dataset.name;
+            
+            // Обновляем поля формы
+            document.getElementById('latInput').value = lat.toFixed(6);
+            document.getElementById('lngInput').value = lng.toFixed(6);
+            document.querySelector('input[name="location_name"]').value = name;
+            
+            // Перемещаем карту и маркер
+            locationMap.setView([lat, lng], 10);
+            
+            if (currentMarker) {
+                currentMarker.setLatLng([lat, lng]);
+            } else {
+                currentMarker = L.marker([lat, lng]).addTo(locationMap);
+            }
+            
+            currentMarker.bindPopup(`
+                ${name}<br>
+                Широта: ${lat.toFixed(6)}<br>
+                Долгота: ${lng.toFixed(6)}
+            `).openPopup();
+        });
+    });
+    
+    // Обработчики изменения полей координат
+    function updateMarkerFromInputs() {
+        const lat = parseFloat(document.getElementById('latInput').value);
+        const lng = parseFloat(document.getElementById('lngInput').value);
+        
+        if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+            locationMap.setView([lat, lng], 10);
+            
+            if (currentMarker) {
+                currentMarker.setLatLng([lat, lng]);
+            } else {
+                currentMarker = L.marker([lat, lng]).addTo(locationMap);
+            }
+            
+            currentMarker.bindPopup(`
+                Координаты:<br>
+                Широта: ${lat.toFixed(6)}<br>
+                Долгота: ${lng.toFixed(6)}
+            `);
+        }
+    }
+    
+    document.getElementById('latInput').addEventListener('input', updateMarkerFromInputs);
+    document.getElementById('lngInput').addEventListener('input', updateMarkerFromInputs);
+    
+    // Устанавливаем текущую дату и время
+    const now = new Date();
+    const datetime = now.getFullYear() + '-' + 
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(now.getDate()).padStart(2, '0') + 'T' +
+                    String(now.getHours()).padStart(2, '0') + ':' +
+                    String(now.getMinutes()).padStart(2, '0');
+    document.querySelector('input[name="timestamp"]').value = datetime;
+});
+</script>
+{% endblock %}
+

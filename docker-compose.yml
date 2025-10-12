@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=your-secret-key-change-this
+      - DATABASE_URL=sqlite:///fellowship_tracker.db
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Опционально: добавляем PostgreSQL для продакшена
+  # db:
+  #   image: postgres:13
+  #   environment:
+  #     POSTGRES_DB: fellowship_tracker
+  #     POSTGRES_USER: gandalf
+  #     POSTGRES_PASSWORD: mellon
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+# volumes:
+#   postgres_data:
+

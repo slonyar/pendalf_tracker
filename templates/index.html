@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="display-4 text-center mb-4">
+            <i class="fas fa-ring text-warning"></i>
+            Трекер Братства Кольца
+        </h1>
+        <p class="lead text-center text-muted">
+            Система отслеживания местоположения участников Братства для Гэндальфа Серого
+        </p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title">Персонажи</h5>
+                        <h2 class="mb-0">{{ characters|length }}</h2>
+                    </div>
+                    <div class="ms-3">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title">Активные</h5>
+                        <h2 class="mb-0">{{ characters|selectattr("status", "equalto", "active")|list|length }}</h2>
+                    </div>
+                    <div class="ms-3">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title">Последние отметки</h5>
+                        <h2 class="mb-0">{{ recent_locations|length }}</h2>
+                    </div>
+                    <div class="ms-3">
+                        <i class="fas fa-map-marker-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-map"></i>
+                    Быстрый просмотр карты
+                </h5>
+                <a href="{{ url_for('map_view') }}" class="btn btn-primary btn-sm">
+                    Полная карта
+                </a>
+            </div>
+            <div class="card-body">
+                <div id="quickMap" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history"></i>
+                    Последние местоположения
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for location in recent_locations %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ location.character.name }}</h6>
+                            <small class="text-muted">{{ location.timestamp.strftime('%d.%m %H:%M') }}</small>
+                        </div>
+                        <p class="mb-1">
+                            {% if location.location_name %}
+                                <i class="fas fa-map-marker-alt text-primary"></i>
+                                {{ location.location_name }}
+                            {% else %}
+                                <i class="fas fa-globe text-muted"></i>
+                                {{ "%.4f, %.4f"|format(location.latitude, location.longitude) }}
+                            {% endif %}
+                        </p>
+                        {% if location.notes %}
+                            <small class="text-muted">{{ location.notes[:50] }}{% if location.notes|length > 50 %}...{% endif %}</small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-users"></i>
+                    Персонажи Братства
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for character in characters %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">{{ character.name }}</h6>
+                            <small class="text-muted">{{ character.race.title() if character.race else 'Неизвестно' }}</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary rounded-pill">{{ character.locations|length }}</span>
+                            <a href="{{ url_for('character_detail', character_id=character.id) }}" class="btn btn-sm btn-outline-primary ms-2">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация быстрой карты
+    const quickMap = L.map('quickMap').setView([-39.0, 176.0], 6);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(quickMap);
+    
+    // Загружаем последние местоположения
+    fetch('/api/locations')
+        .then(response => response.json())
+        .then(locations => {
+            const markers = {};
+            
+            locations.forEach(location => {
+                const marker = L.marker([location.latitude, location.longitude])
+                    .bindPopup(`
+                        <strong>${location.character_name}</strong><br>
+                        ${location.location_name || 'Координаты: ' + location.latitude + ', ' + location.longitude}<br>
+                        <small>${new Date(location.timestamp).toLocaleString('ru-RU')}</small>
+                    `);
+                
+                if (markers[location.character_id]) {
+                    markers[location.character_id].remove();
+                }
+                markers[location.character_id] = marker;
+                marker.addTo(quickMap);
+            });
+        })
+        .catch(error => console.error('Ошибка загрузки данных:', error));
+});
+</script>
+{% endblock %}
+

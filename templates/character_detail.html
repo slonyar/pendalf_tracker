@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}{{ character.name }} - Трекер Братства Кольца{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>
+                <i class="fas fa-user"></i>
+                {{ character.name }}
+            </h2>
+            <a href="{{ url_for('characters') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Назад к персонажам
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i>
+                    Информация о персонаже
+                </h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Имя:</strong> {{ character.name }}</p>
+                <p><strong>Раса:</strong> {{ character.race.title() if character.race else 'Не указана' }}</p>
+                <p><strong>Статус:</strong>
+                    {% if character.status == 'active' %}
+                        <span class="badge bg-success">Активен</span>
+                    {% elif character.status == 'inactive' %}
+                        <span class="badge bg-secondary">Неактивен</span>
+                    {% else %}
+                        <span class="badge bg-warning">{{ character.status.title() }}</span>
+                    {% endif %}
+                </p>
+                {% if character.description %}
+                <p><strong>Описание:</strong> {{ character.description }}</p>
+                {% endif %}
+                <p><strong>Дата добавления:</strong> {{ character.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                <p><strong>Всего местоположений:</strong> {{ locations|length }}</p>
+                {% if locations %}
+                <p><strong>Последнее обновление:</strong> {{ locations[0].timestamp.strftime('%d.%m.%Y %H:%M') }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-cog"></i>
+                    Действия
+                </h6>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('add_location') }}" class="btn btn-primary btn-sm d-block mb-2">
+                    <i class="fas fa-map-marker-alt"></i>
+                    Добавить местоположение
+                </a>
+                <a href="{{ url_for('map_view') }}?character_id={{ character.id }}" class="btn btn-info btn-sm d-block mb-2">
+                    <i class="fas fa-map"></i>
+                    Показать на карте
+                </a>
+                <form method="POST" action="{{ url_for('delete_character', character_id=character.id) }}" class="d-inline w-100" onsubmit="return confirm('Вы уверены, что хотите удалить {{ character.name }}? Все связанные местоположения также будут удалены!')">
+                    <button type="submit" class="btn btn-danger btn-sm d-block">
+                        <i class="fas fa-trash"></i>
+                        Удалить персонажа
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-map"></i>
+                    Карта перемещений
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div id="characterMap" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history"></i>
+                    История местоположений ({{ locations|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if locations %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-clock"></i> Дата и время</th>
+                                <th><i class="fas fa-map-marker-alt"></i> Место</th>
+                                <th><i class="fas fa-globe"></i> Координаты</th>
+                                <th><i class="fas fa-sticky-note"></i> Заметки</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for location in locations %}
+                            <tr>
+                                <td>
+                                    {{ location.timestamp.strftime('%d.%m.%Y %H:%M') }}
+                                    {% if loop.first %}
+                                        <span class="badge bg-success ms-2">Последнее</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if location.location_name %}
+                                        <strong>{{ location.location_name }}</strong>
+                                    {% else %}
+                                        <em class="text-muted">Не указано</em>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <code>{{ "%.6f, %.6f"|format(location.latitude, location.longitude) }}</code>
+                                </td>
+                                <td>
+                                    {% if location.notes %}
+                                        {{ location.notes[:100] }}{% if location.notes|length > 100 %}...{% endif %}
+                                    {% else %}
+                                        <em class="text-muted">Нет заметок</em>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Нет записей о местоположении</h5>
+                    <p class="text-muted">Для этого персонажа пока не добавлено ни одного местоположения.</p>
+                    <a href="{{ url_for('add_location') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Добавить первое местоположение
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация карты персонажа
+    const characterMap = L.map('characterMap').setView([-39.0, 176.0], 6);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(characterMap);
+    
+    // Загружаем местоположения персонажа
+    fetch(`/api/locations?character_id={{ character.id }}`)
+        .then(response => response.json())
+        .then(locations => {
+            if (locations.length === 0) return;
+            
+            const markers = [];
+            const coordinates = [];
+            
+            locations.forEach((location, index) => {
+                const isLatest = index === locations.length - 1;
+                const marker = L.circleMarker([location.latitude, location.longitude], {
+                    color: isLatest ? '#28a745' : '#007bff',
+                    fillColor: isLatest ? '#28a745' : '#007bff',
+                    fillOpacity: 0.7,
+                    radius: isLatest ? 10 : 6,
+                    weight: 2
+                }).bindPopup(`
+                    <div class="popup-content">
+                        <h6>${location.location_name || 'Координаты: ' + location.latitude + ', ' + location.longitude}</h6>
+                        <p><strong>Время:</strong> ${new Date(location.timestamp).toLocaleString('ru-RU')}</p>
+                        ${location.notes ? '<p><strong>Заметки:</strong> ' + location.notes + '</p>' : ''}
+                        ${isLatest ? '<span class="badge bg-success">Текущее местоположение</span>' : ''}
+                    </div>
+                `);
+                
+                markers.push(marker);
+                coordinates.push([location.latitude, location.longitude]);
+                marker.addTo(characterMap);
+            });
+            
+            // Добавляем траекторию
+            if (coordinates.length > 1) {
+                L.polyline(coordinates, {
+                    color: '#007bff',
+                    weight: 3,
+                    opacity: 0.7,
+                    dashArray: '5, 5'
+                }).addTo(characterMap);
+            }
+            
+            // Подгоняем карту под все маркеры
+            const group = new L.featureGroup(markers);
+            characterMap.fitBounds(group.getBounds().pad(0.1));
+        })
+        .catch(error => console.error('Ошибка загрузки данных:', error));
+});
+</script>
+{% endblock %}
+
