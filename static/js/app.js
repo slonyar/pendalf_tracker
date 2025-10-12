@@ -1,26 +1,18 @@
-// Основной JavaScript файл приложения
 document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация всех компонентов
     initializeApp();
 });
 
 function initializeApp() {
-    // Инициализация уведомлений
     initNotifications();
     
-    // Инициализация форм
     initForms();
     
-    // Инициализация карт (если есть на странице)
     initMaps();
     
-    // Инициализация интерактивных элементов
     initInteractiveElements();
 }
 
-// Система уведомлений
 function initNotifications() {
-    // Автоматическое скрытие алертов через 5 секунд
     const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
     alerts.forEach(alert => {
         setTimeout(() => {
@@ -30,9 +22,7 @@ function initNotifications() {
     });
 }
 
-// Улучшение форм
 function initForms() {
-    // Валидация форм в реальном времени
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
         form.addEventListener('submit', function(e) {
@@ -40,13 +30,11 @@ function initForms() {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                // Показываем уведомление об ошибке
                 showNotification('Пожалуйста, заполните все обязательные поля корректно', 'error');
             }
             form.classList.add('was-validated');
         });
         
-        // Улучшение полей ввода координат
         const latInput = form.querySelector('input[name="latitude"]');
         const lngInput = form.querySelector('input[name="longitude"]');
         
@@ -60,7 +48,6 @@ function initForms() {
     });
 }
 
-// Валидация координат
 function validateCoordinate(input) {
     const value = parseFloat(input.value);
     const isLat = input.name === 'latitude';
@@ -84,9 +71,7 @@ function validateCoordinate(input) {
     }
 }
 
-// Инициализация карт
 function initMaps() {
-    // Общие настройки для всех карт
     const mapDefaults = {
         center: [-39.0, 176.0],
         zoom: 6,
@@ -94,13 +79,10 @@ function initMaps() {
         attribution: '© OpenStreetMap contributors'
     };
     
-    // Глобальные переменные для карт
     window.appMaps = window.appMaps || {};
 }
 
-// Интерактивные элементы
 function initInteractiveElements() {
-    // Улучшение кнопок удаления
     const deleteButtons = document.querySelectorAll('button[onclick*="confirm"], form[onsubmit*="confirm"] button[type="submit"]');
     deleteButtons.forEach(button => {
         button.addEventListener('click', function(e) {
@@ -121,10 +103,8 @@ function initInteractiveElements() {
         });
     });
     
-    // Улучшение таблиц
     const tables = document.querySelectorAll('.table');
     tables.forEach(table => {
-        // Добавляем сортировку (простая реализация)
         const headers = table.querySelectorAll('th');
         headers.forEach((header, index) => {
             if (header.textContent.trim()) {
@@ -134,7 +114,6 @@ function initInteractiveElements() {
         });
     });
     
-    // Копирование координат по клику
     const coordinateElements = document.querySelectorAll('code');
     coordinateElements.forEach(element => {
         if (element.textContent.match(/^-?\d+\.\d+,\s*-?\d+\.\d+$/)) {
@@ -149,7 +128,6 @@ function initInteractiveElements() {
     });
 }
 
-// Функция уведомлений
 function showNotification(message, type = 'info', duration = 3000) {
     const alertTypes = {
         'success': 'alert-success',
@@ -168,7 +146,6 @@ function showNotification(message, type = 'info', duration = 3000) {
     
     document.body.appendChild(alert);
     
-    // Автоматическое удаление
     setTimeout(() => {
         if (alert.parentNode) {
             alert.remove();
@@ -176,7 +153,6 @@ function showNotification(message, type = 'info', duration = 3000) {
     }, duration);
 }
 
-// Диалог подтверждения
 function showConfirmDialog(title, message, onConfirm) {
     const modal = document.createElement('div');
     modal.className = 'modal fade';
@@ -213,7 +189,6 @@ function showConfirmDialog(title, message, onConfirm) {
     });
 }
 
-// Простая сортировка таблиц
 function sortTable(table, columnIndex) {
     const tbody = table.querySelector('tbody');
     const rows = Array.from(tbody.querySelectorAll('tr'));
@@ -233,7 +208,6 @@ function sortTable(table, columnIndex) {
         }
     });
     
-    // Проверяем, была ли таблица уже отсортирована по этому столбцу
     const currentOrder = table.dataset.sortOrder;
     const currentColumn = table.dataset.sortColumn;
     
@@ -246,13 +220,10 @@ function sortTable(table, columnIndex) {
     
     table.dataset.sortColumn = columnIndex.toString();
     
-    // Обновляем таблицу
     rows.forEach(row => tbody.appendChild(row));
 }
 
-// Утилиты для работы с картами
 const MapUtils = {
-    // Создание маркера с кастомным стилем
     createCustomMarker(lat, lng, options = {}) {
         const defaultOptions = {
             color: '#007bff',
@@ -265,7 +236,6 @@ const MapUtils = {
         return L.circleMarker([lat, lng], { ...defaultOptions, ...options });
     },
     
-    // Создание попапа с кастомным содержимым
     createPopup(content, options = {}) {
         return L.popup({
             maxWidth: 300,
@@ -274,14 +244,12 @@ const MapUtils = {
         }).setContent(content);
     },
     
-    // Форматирование координат для отображения
     formatCoordinates(lat, lng, precision = 6) {
         return `${lat.toFixed(precision)}, ${lng.toFixed(precision)}`;
     },
     
-    // Расчет расстояния между двумя точками (формула гаверсинуса)
     calculateDistance(lat1, lng1, lat2, lng2) {
-        const R = 6371; // Радиус Земли в км
+        const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLng = (lng2 - lng1) * Math.PI / 180;
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -292,14 +260,11 @@ const MapUtils = {
     }
 };
 
-// Утилиты для работы с датами
 const DateUtils = {
-    // Форматирование даты для отображения
     formatDate(date, locale = 'ru-RU') {
         return new Date(date).toLocaleString(locale);
     },
     
-    // Получение относительного времени
     getRelativeTime(date) {
         const now = new Date();
         const diff = now - new Date(date);
@@ -315,7 +280,6 @@ const DateUtils = {
     }
 };
 
-// Экспорт утилит в глобальную область видимости
 window.MapUtils = MapUtils;
 window.DateUtils = DateUtils;
 window.showNotification = showNotification;

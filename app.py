@@ -16,7 +16,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Models
 class Character(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
@@ -35,7 +34,6 @@ class Location(db.Model):
     notes = db.Column(db.Text)
     location_name = db.Column(db.String(200))  # Например: "Шир", "Ривенделл", "Мория"
 
-# Forms
 class CharacterForm(FlaskForm):
     name = StringField('Имя персонажа', validators=[DataRequired()])
     description = TextAreaField('Описание')
@@ -56,7 +54,6 @@ class LocationForm(FlaskForm):
     location_name = StringField('Название места')
     notes = TextAreaField('Заметки')
 
-# Routes
 @app.route('/')
 def index():
     characters = Character.query.all()
@@ -226,7 +223,6 @@ def delete_character(character_id):
 def init_sample_data():
     """Инициализация примерных данных"""
     if Character.query.count() == 0:
-        # Добавляем персонажей Братства
         characters_data = [
             {'name': 'Фродо Бэггинс', 'race': 'hobbit', 'description': 'Хранитель Кольца'},
             {'name': 'Сэмуайз Гэмджи', 'race': 'hobbit', 'description': 'Верный друг Фродо'},
@@ -245,19 +241,15 @@ def init_sample_data():
         
         db.session.commit()
         
-        # Добавляем примерные локации (путешествие по Средиземью)
         locations_data = [
-            # Фродо
             {'character_name': 'Фродо Бэггинс', 'lat': -37.8136, 'lng': 174.9442, 'name': 'Хоббитон', 'notes': 'Начало путешествия'},
             {'character_name': 'Фродо Бэггинс', 'lat': -38.8136, 'lng': 175.9442, 'name': 'Старый лес', 'notes': 'Встреча с Томом Бомбадилом'},
             {'character_name': 'Фродо Бэггинс', 'lat': -39.8136, 'lng': 176.9442, 'name': 'Ривенделл', 'notes': 'Совет Эльронда'},
             
-            # Арагорн
             {'character_name': 'Арагорн', 'lat': -40.8136, 'lng': 177.9442, 'name': 'Заверта', 'notes': 'Встреча с хоббитами'},
             {'character_name': 'Арагорн', 'lat': -39.8136, 'lng': 176.9442, 'name': 'Ривенделл', 'notes': 'Совет Эльронда'},
             {'character_name': 'Арагорн', 'lat': -41.8136, 'lng': 178.9442, 'name': 'Мория', 'notes': 'Проход через копи'},
             
-            # Гэндальф
             {'character_name': 'Гэндальф Серый', 'lat': -37.8136, 'lng': 174.9442, 'name': 'Хоббитон', 'notes': 'Встреча с Фродо'},
             {'character_name': 'Гэндальф Серый', 'lat': -39.8136, 'lng': 176.9442, 'name': 'Ривенделл', 'notes': 'Совет Эльронда'},
             {'character_name': 'Гэндальф Серый', 'lat': -41.8136, 'lng': 178.9442, 'name': 'Мория', 'notes': 'Битва с Балрогом'},
@@ -282,8 +274,6 @@ def init_sample_data():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-        # Убираем автоматический вызов init_sample_data()
-        # init_sample_data()  # <-- Комментируем эту строку
     
     print("Запуск сервера на http://localhost:5000")
     app.run(debug=True, host='0.0.0.0', port=5000)

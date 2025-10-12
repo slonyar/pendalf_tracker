@@ -16,7 +16,7 @@
                                     <i class="fas fa-user"></i> Персонаж *
                                 </label>
                                 <select name="character_id" id="character_id" class="form-select">
-                                    <option value="">Выберите персонажа из Братства</option>
+                                    <option value="">Выберите персонажа</option>
                                     {% for character in characters %}
                                     <option value="{{ character.id }}">
                                         {{ character.name }}
@@ -127,7 +127,7 @@
                                 <div class="d-grid gap-2">
                                     <button type="button" class="btn btn-sm btn-outline-primary location-preset" 
                                             data-lat="-37.8136" data-lng="174.9442" data-name="Хоббитон">
-                                        <strong>Хоббитон</strong>
+                                        <strong>Хоббитания</strong>
                                         <small class="text-muted"> — Дом хоббитов в Шире</small>
                                     </button>
                                     
@@ -157,7 +157,7 @@
                                     
                                     <button type="button" class="btn btn-sm btn-outline-danger location-preset" 
                                             data-lat="-46.8136" data-lng="183.9442" data-name="Мордор">
-                                        <strong>Мордор</strong>
+                                        <strong>Мордовия</strong>
                                         <small class="text-muted"> — Земли Тьмы</small>
                                     </button>
                                 </div>

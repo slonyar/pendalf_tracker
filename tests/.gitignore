@@ -1,11 +1,9 @@
-# Тестовые артефакты
 htmlcov/
 .coverage
 coverage.xml
 .pytest_cache/
 *.db-test*
-
-# Временные файлы тестов
+__pycache__
 test_*.log
 temp_test_*
 

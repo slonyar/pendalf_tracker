@@ -1,6 +1,4 @@
 """
-Тесты для Fellowship Tracker
-
 Структура тестов:
 - test_models.py: тесты моделей базы данных
 - test_routes.py: тесты веб-маршрутов  

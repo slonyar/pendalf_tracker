@@ -17,18 +17,3 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # Опционально: добавляем PostgreSQL для продакшена
-  # db:
-  #   image: postgres:13
-  #   environment:
-  #     POSTGRES_DB: fellowship_tracker
-  #     POSTGRES_USER: gandalf
-  #     POSTGRES_PASSWORD: mellon
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   restart: unless-stopped
-
-# volumes:
-#   postgres_data:
-
